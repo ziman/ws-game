@@ -4,59 +4,38 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: f8debfafcf658f945b5698f00e384dfab6764836c019a70ebb0361553678a57f
+-- hash: ac8157838f3e7c9e8f9e7ca0560b1b781b500cfae89e52d6959866ad65889c86
 
 name:           ws-game
 version:        0.1.0.0
-description:    Please see the README on GitHub at <https://github.com/githubuser/ws-game#readme>
-homepage:       https://github.com/githubuser/ws-game#readme
-bug-reports:    https://github.com/githubuser/ws-game/issues
-author:         Author name here
-maintainer:     example@example.com
-copyright:      2020 Author name here
+description:    Library for WebSocket/broweser-based game backends
+homepage:       https://github.com/ziman/ws-game#readme
+bug-reports:    https://github.com/ziman/ws-game/issues
+author:         Matus Tejiscak
+maintainer:     ziman@functor.sk
+copyright:      2020 Matus Tejiscak
 license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
-extra-source-files:
-    README.md
-    ChangeLog.md
 
 source-repository head
   type: git
-  location: https://github.com/githubuser/ws-game
+  location: https://github.com/ziman/ws-game
 
 library
   exposed-modules:
-      Lib
+      Game.WSGame.Engine
+      Game.WSGame.Game
   other-modules:
       Paths_ws_game
   hs-source-dirs:
       src
+  default-extensions: LambdaCase TypeApplications TypeOperators ScopedTypeVariables DeriveGeneric DeriveAnyClass DataKinds DerivingStrategies GeneralizedNewtypeDeriving ViewPatterns Strict FlexibleInstances FlexibleContexts GADTs TypeFamilies NamedFieldPuns RankNTypes MultiParamTypeClasses RecordWildCards MultiWayIf OverloadedStrings DuplicateRecordFields
+  ghc-options: -Wall -Wextra -Werror -Wno-name-shadowing
   build-depends:
-      base >=4.7 && <5
-  default-language: Haskell2010
-
-executable ws-game-exe
-  main-is: Main.hs
-  other-modules:
-      Paths_ws_game
-  hs-source-dirs:
-      app
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N
-  build-depends:
-      base >=4.7 && <5
-    , ws-game
-  default-language: Haskell2010
-
-test-suite ws-game-test
-  type: exitcode-stdio-1.0
-  main-is: Spec.hs
-  other-modules:
-      Paths_ws_game
-  hs-source-dirs:
-      test
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N
-  build-depends:
-      base >=4.7 && <5
-    , ws-game
+      aeson
+    , base >=4.7 && <5
+    , stm
+    , transformers
+    , websockets
   default-language: Haskell2010
