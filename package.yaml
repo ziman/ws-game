@@ -1,0 +1,47 @@
+name:                ws-game
+version:             0.1.0.0
+github:              "ziman/ws-game"
+license:             BSD3
+author:              "Matus Tejiscak"
+maintainer:          "ziman@functor.sk"
+copyright:           "2020 Matus Tejiscak"
+description:         Library for WebSocket/broweser-based game backends
+
+dependencies:
+- base >= 4.7 && < 5
+
+ghc-options:
+- -threaded
+- -rtsopts
+- -with-rtsopts=-N
+- -Wall
+- -Wextra
+- -Werror
+- -Wno-name-shadowing
+
+default-extensions:
+- LambdaCase
+- TypeApplications
+- TypeOperators
+- ScopedTypeVariables
+- DeriveGeneric
+- DeriveAnyClass
+- DataKinds
+- DerivingStrategies
+- GeneralizedNewtypeDeriving
+- ViewPatterns
+- Strict
+- FlexibleInstances
+- FlexibleContexts
+- GADTs
+- TypeFamilies
+- NamedFieldPuns
+- RankNTypes
+- MultiParamTypeClasses
+- RecordWildCards
+- MultiWayIf
+- OverloadedStrings
+- DuplicateRecordFields
+
+library:
+  source-dirs: src
