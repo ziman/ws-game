@@ -6,6 +6,7 @@ module Game.WSGame.Game
   , perform
   , liftSTM
   , getConnection
+  , getEnv
   , getState, setState, modifyState
   )
   where
@@ -30,50 +31,54 @@ instance Show Error where
   show (SoftError msg) = "soft error: " ++ msg
   show (HardError msg) = "hard error: " ++ msg
 
-data Env st conn = Env
+data Env st genv conn = Env
   { connection :: conn
   , state :: TVar st
+  , gameEnv :: genv
   }
 
-type GameM st eff conn =
+type GameM st eff genv conn =
   RWST
-    (Env st conn)
+    (Env st genv conn)
     [eff]
     ()
     (ExceptT Error STM)
 
-throw :: Error -> GameM st eff conn a
+throw :: Error -> GameM st eff genv conn a
 throw = lift . throwE
 
-throwSoft :: String -> GameM st eff conn a
+throwSoft :: String -> GameM st eff genv conn a
 throwSoft = throw . SoftError
 
-throwHard :: String -> GameM st eff conn a
+throwHard :: String -> GameM st eff genv conn a
 throwHard = throw . HardError
 
-liftSTM :: STM a -> GameM st eff conn a
+liftSTM :: STM a -> GameM st eff genv conn a
 liftSTM = lift . lift
 
-perform :: eff -> GameM st eff conn ()
+perform :: eff -> GameM st eff genv conn ()
 perform eff = tell [eff]
 
-getConnection :: GameM st eff conn conn
+getConnection :: GameM st eff genv conn conn
 getConnection = connection <$> ask
 
-getState :: GameM st eff conn st
+getState :: GameM st eff genv conn st
 getState = liftSTM . STM.readTVar . state =<< ask
 
-setState :: st -> GameM st eff conn ()
+setState :: st -> GameM st eff genv conn ()
 setState st = do
   tvState <- state <$> ask
   liftSTM $ STM.writeTVar tvState st
 
-modifyState :: (st -> st) -> GameM st eff conn ()
+modifyState :: (st -> st) -> GameM st eff genv conn ()
 modifyState f = do
   tvState <- state <$> ask
   liftSTM $ STM.modifyTVar tvState f
 
-runGameM :: Env st conn -> (eff -> IO ()) -> GameM st eff conn a -> IO (Either Error a)
+getEnv :: GameM st eff genv conn genv
+getEnv = gameEnv <$> ask
+
+runGameM :: Env st genv conn -> (eff -> IO ()) -> GameM st eff genv conn a -> IO (Either Error a)
 runGameM env runEffect game =
   (STM.atomically $ runExceptT $ evalRWST game env ()) >>= \case
     Left err -> pure (Left err)

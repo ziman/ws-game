@@ -86,20 +86,20 @@ close Connection{ws} =
       forever (void $ WS.receive ws)
     putStrLn $ "connection closed"
 
-data Game st eff msg_C2S msg_S2C = Game
-  { onMessage :: msg_C2S -> Game.GameM st eff Connection ()
-  , onDeadPlayer :: Game.GameM st eff Connection ()
+data Game st eff genv msg_C2S msg_S2C = Game
+  { onMessage :: msg_C2S -> Game.GameM st eff genv Connection ()
+  , onDeadPlayer :: Game.GameM st eff genv Connection ()
   , runEffect :: eff -> IO ()
   }
 
 application
-  :: forall msg_S2C msg_C2S st eff
+  :: forall msg_S2C msg_C2S st eff genv
   .  ( Aeson.FromJSON msg_C2S
      , Aeson.ToJSON msg_S2C
      , HasError msg_S2C
      )
-  => TVar st -> TVar Int -> Game st eff msg_C2S msg_S2C -> WS.ServerApp
-application tvState tvCounter Game{onMessage,onDeadPlayer,runEffect} pending = do
+  => TVar st -> TVar Int -> genv -> Game st eff genv msg_C2S msg_S2C -> WS.ServerApp
+application tvState tvCounter genv Game{onMessage,onDeadPlayer,runEffect} pending = do
   wsConnection <- WS.acceptRequest pending
   WS.withPingThread wsConnection 30 (return ()) $ do
     connection <- atomically $ do
@@ -107,7 +107,7 @@ application tvState tvCounter Game{onMessage,onDeadPlayer,runEffect} pending = d
       writeTVar tvCounter (nextId + 1)
       pure Connection{id=nextId, ws=wsConnection}
 
-    let env = Game.Env{connection, state=tvState}
+    let env = Game.Env{connection, state=tvState, gameEnv=genv}
 
     -- run the player until dead
     result <- playerLoop @msg_S2C connection (Game.runGameM env runEffect . onMessage)
@@ -121,15 +121,15 @@ application tvState tvCounter Game{onMessage,onDeadPlayer,runEffect} pending = d
     void $ Game.runGameM env runEffect onDeadPlayer
 
 runGame
-  :: forall msg_S2C msg_C2S st eff
+  :: forall msg_S2C msg_C2S st eff genv
   .  ( Aeson.FromJSON msg_C2S
      , Aeson.ToJSON msg_S2C
      , HasError msg_S2C
      )
-  => String -> Int -> st -> Game st eff msg_C2S msg_S2C -> IO ()
-runGame addr port initialState game = do
+  => String -> Int -> st -> genv -> Game st eff genv msg_C2S msg_S2C -> IO ()
+runGame addr port initialState genv game = do
   tvState <- newTVarIO initialState
   tvCounter <- newTVarIO 0
   WS.runServer addr port
-    $ application @msg_S2C tvState tvCounter game
+    $ application @msg_S2C tvState tvCounter genv game
 
