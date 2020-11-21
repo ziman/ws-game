@@ -21,6 +21,7 @@ import Control.Monad.Trans.RWS.CPS hiding (state)
 import Control.Concurrent.STM (STM, TVar)
 import qualified Control.Concurrent.STM as STM
 import qualified Control.Exception as Exception
+import qualified Control.Monad.State.Class as MTL -- mtl
 
 data Error
   = SoftError String  -- keep the connection
@@ -48,6 +49,11 @@ newtype GameM st eff genv conn a = GameM
   }
   deriving newtype (Functor, Applicative, Monad)
 
+instance MTL.MonadState st (GameM st eff genv conn) where
+  get = getState
+  put = setState
+  state = wrapState
+
 throw :: Error -> GameM st eff genv conn a
 throw = GameM . lift . throwE
 
@@ -74,10 +80,15 @@ setState st = do
   tvState <- state <$> GameM ask
   liftSTM $ STM.writeTVar tvState st
 
+wrapState :: (st -> (a, st)) -> GameM st eff genv conn a
+wrapState f = do
+  Env{state} <- GameM ask
+  liftSTM $ STM.stateTVar state f
+
 modifyState :: (st -> st) -> GameM st eff genv conn ()
 modifyState f = do
-  tvState <- state <$> GameM ask
-  liftSTM $ STM.modifyTVar tvState f
+  Env{state} <- GameM ask
+  liftSTM $ STM.modifyTVar state f
 
 getEnv :: GameM st eff genv conn genv
 getEnv = gameEnv <$> GameM ask
