@@ -10,9 +10,11 @@ description:         Library for WebSocket/broweser-based game backends
 dependencies:
 - base >= 4.7 && < 5
 - transformers
+- mtl
 - stm
 - aeson
 - websockets
+- microlens
 
 ghc-options:
 - -Wall

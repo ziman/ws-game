@@ -37,15 +37,19 @@ data Env st genv conn = Env
   , gameEnv :: genv
   }
 
-type GameM st eff genv conn =
-  RWST
-    (Env st genv conn)
-    [eff]
-    ()
-    (ExceptT Error STM)
+newtype GameM st eff genv conn a = GameM
+  { _unGameM ::
+      RWST
+        (Env st genv conn)
+        [eff]
+        ()
+        (ExceptT Error STM)
+        a
+  }
+  deriving newtype (Functor, Applicative, Monad)
 
 throw :: Error -> GameM st eff genv conn a
-throw = lift . throwE
+throw = GameM . lift . throwE
 
 throwSoft :: String -> GameM st eff genv conn a
 throwSoft = throw . SoftError
@@ -54,32 +58,32 @@ throwHard :: String -> GameM st eff genv conn a
 throwHard = throw . HardError
 
 liftSTM :: STM a -> GameM st eff genv conn a
-liftSTM = lift . lift
+liftSTM = GameM . lift . lift
 
 perform :: eff -> GameM st eff genv conn ()
-perform eff = tell [eff]
+perform eff = GameM $ tell [eff]
 
 getConnection :: GameM st eff genv conn conn
-getConnection = connection <$> ask
+getConnection = connection <$> GameM ask
 
 getState :: GameM st eff genv conn st
-getState = liftSTM . STM.readTVar . state =<< ask
+getState = liftSTM . STM.readTVar . state =<< GameM ask
 
 setState :: st -> GameM st eff genv conn ()
 setState st = do
-  tvState <- state <$> ask
+  tvState <- state <$> GameM ask
   liftSTM $ STM.writeTVar tvState st
 
 modifyState :: (st -> st) -> GameM st eff genv conn ()
 modifyState f = do
-  tvState <- state <$> ask
+  tvState <- state <$> GameM ask
   liftSTM $ STM.modifyTVar tvState f
 
 getEnv :: GameM st eff genv conn genv
-getEnv = gameEnv <$> ask
+getEnv = gameEnv <$> GameM ask
 
 runGameM :: Env st genv conn -> (eff -> IO ()) -> GameM st eff genv conn a -> IO (Either Error a)
-runGameM env runEffect game =
+runGameM env runEffect (GameM game) =
   (STM.atomically $ runExceptT $ evalRWST game env ()) >>= \case
     Left err -> pure (Left err)
     Right (x, effects) -> do

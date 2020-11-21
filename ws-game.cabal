@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: ac8157838f3e7c9e8f9e7ca0560b1b781b500cfae89e52d6959866ad65889c86
+-- hash: a53ecb3f90cfd0fc0584106e347a65bea0c060444156f7ad2461d7d073864a34
 
 name:           ws-game
 version:        0.1.0.0
@@ -35,6 +35,8 @@ library
   build-depends:
       aeson
     , base >=4.7 && <5
+    , microlens
+    , mtl
     , stm
     , transformers
     , websockets
